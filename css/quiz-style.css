@@ -1,0 +1,262 @@
+/* --- Global Variables & Reset --- */
+:root {
+    --primary: #3f37c9;
+    --secondary: #4361ee;
+    --accent: #f72585;
+    --bg: #4361ee; 
+    --card: #ffffff;
+    --text: #012a4a;
+    --success: #10b981;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    /* Changed from center to flex-start to allow manual top margin control */
+    align-items: flex-start; 
+    padding: 15px;
+    overflow: hidden; 
+}
+
+.slide-container {
+    display: none;
+    width: 92vw;
+    max-width: 650px;
+    /* Slightly reduced height from 85vh to 82vh to ensure bottom visibility */
+    height: 82vh; 
+    /* Added margin-top to shift it upwards and create top/bottom symmetry */
+    margin-top: 4vh; 
+    background-color: #fcfdfc;
+    flex-direction: column;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    border-radius: 30px; 
+    border: 4px solid #4cc9f0; 
+    overflow: hidden;
+    position: relative;
+    /* margin-left/right auto handles horizontal centering */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+
+.slide-container.active {
+    display: flex;
+}
+
+/* --- FIXED HEADER --- */
+.quiz-header {
+    padding: 40px 25px 10px 25px; 
+    background: var(--card);
+    flex-shrink: 0;
+    /* CRITICAL: This locks the timer inside this white section */
+    position: relative !important; 
+}
+
+/* --- Global Timer --- */
+.global-timer {
+    position: absolute !important;
+    /* Adjusted coordinates to pull it inside the white card */
+    top: 15px;
+    right: 15px;
+    background: var(--accent);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(247, 37, 133, 0.3);
+}
+
+
+.progress-container {
+    height: 6px;
+    background: #eef2ff;
+    border-radius: 10px;
+    /* Changed margin-top to a static 20px to push it away from the top edge */
+    margin-top: 20px; 
+    margin-bottom: 12px;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    border-radius: 10px;
+    transition: width 0.3s ease;
+}
+
+.quiz-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #748cab;
+}
+
+/* --- Redesigned Flag Button (Icon Only) --- */
+#flagBtn {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: 0.2s;
+    padding: 0;
+}
+
+#flagBtn.active {
+    background: #fff3cd;
+    border-color: #fb5607;
+    box-shadow: 0 0 8px rgba(251, 86, 7, 0.2);
+}
+
+/* --- SCROLLABLE CONTENT AREA --- */
+.content-scroll {
+    flex: 1;
+    padding: 10px 25px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.question-text {
+    font-family: 'Merriweather', serif;
+    font-size: 1.1rem;
+    line-height: 1.4;
+    margin-bottom: 15px;
+    color: var(--primary);
+}
+
+.options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.option-btn {
+    background: var(--card);
+    border: 2px solid #eef2ff;
+    padding: 14px 18px;
+    border-radius: 15px;
+    text-align: left;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    width: 100%;
+}
+
+.option-btn.selected {
+    border-color: var(--primary);
+    background: #3f37c9;
+    color: #ffffff;
+}
+
+.nav-footer {
+    padding: 15px 25px 25px 25px; 
+    background: var(--card);
+    border-top: 1px solid #eef2ff;
+    flex-shrink: 0;
+}
+
+.nav-buttons-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+}
+
+.btn {
+    padding: 12px 5px;
+    border-radius: 50px;
+    border: none;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.85rem;
+    text-align: center;
+    transition: 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary { background: var(--primary); color: white; }
+.btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 20px 0;
+}
+
+.summary-dot {
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    background: #ffffff;
+    border: 1px solid #e0e7ff;
+    cursor: pointer;
+}
+
+.summary-dot.answered { background: #e7f3ff; color: var(--primary); border-color: #4cc9f0; }
+.summary-dot.flagged { border: 2px solid #fb5607; background: #fff3cd; position: relative; }
+.summary-dot.flagged::after { content: '🚩'; position: absolute; top: -6px; right: -4px; font-size: 0.6rem; }
+
+.stat-card {
+    padding: 15px;
+    border-radius: 18px;
+    text-align: center;
+}
+
+.filter-bar {
+    display: flex;
+    gap: 6px;
+    background: #f1f5ff;
+    padding: 6px;
+    border-radius: 50px;
+}
+
+.filter-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 40px;
+    border: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: transparent;
+    color: var(--primary);
+}
+
+.filter-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+@media (max-width: 480px) {
+    .slide-container { height: 90vh; width: 95vw; }
+    /* Increased top padding for symmetry when on mobile */
+    .quiz-header { padding-top: 40px; } 
+    .nav-footer { padding-bottom: 25px; }
+}
