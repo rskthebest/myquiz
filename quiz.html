@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Master Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/quiz-style.css">
+</head>
+<body>
+
+<div class="global-timer" id="globalTimer" style="display:none !important;">--:--</div>
+
+
+<div class="slide-container active" id="start-slide">
+    <div style="text-align: center; margin: auto; padding: 25px;">
+        <h1 id="quiz-main-title">Loading Quiz...</h1>
+        <p id="quiz-sub-title">Please wait...</p><br>
+        <button id="startBtn" class="btn btn-primary" style="width: 220px; display:none;">Start Quiz</button>
+    </div>
+</div>
+
+<div id="question-area"></div>
+
+<div class="slide-container" id="summary-slide">
+    <div class="content-scroll">
+        <h2 class="slide-title" id="dash-title" style="margin-top: 20px; text-align: center; font-family: 'Merriweather'; color: var(--primary);">Quiz Dashboard</h2>
+        <div class="filter-bar" style="margin-top: 15px;">
+            <button class="filter-btn active" id="sum-all" onclick="triggerSummaryFilter('all')">All</button>
+            <button class="filter-btn" id="sum-flagged" onclick="triggerSummaryFilter('flagged')">Flagged</button>
+            <button class="filter-btn" id="sum-skipped" onclick="triggerSummaryFilter('skipped')">Skipped</button>
+        </div>
+        <div class="summary-grid" id="summaryGrid"></div>
+    </div>
+    <div class="nav-footer" id="dash-footer">
+        <button class="btn btn-primary" id="finalSubmitBtn">Submit Final Test</button>
+        <button class="btn btn-outline" id="resumeBtn">Resume Quiz</button>
+    </div>
+</div>
+
+<div class="slide-container" id="results-slide">
+    <div class="content-scroll">
+        <h2 class="slide-title" style="margin-top: 20px; text-align: center; font-family: 'Merriweather';">Performance Summary</h2>
+        <div style="text-align: center; margin: 10px 0;">
+            <h1 style="font-size: 3.5rem; margin-bottom: 0; color: #3f37c9;" id="finalScoreDisplay">0%</h1>
+            <p style="font-weight: 700; color: #7209b7; margin-top: -5px;" id="marksDisplay">Score: 0 / 0</p>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0;">
+            <div class="stat-card" id="card-correct" style="background: #d1fae5; color: #065f46;">
+                <b>CORRECT</b><span id="res-correct-count">0</span>
+            </div>
+            <div class="stat-card" id="card-wrong" style="background: #fee2e2; color: #991b1b;">
+                <b>WRONG</b><span id="res-wrong-count">0</span>
+            </div>
+            <div class="stat-card" id="card-skipped" style="background: #f3f4f6; color: #374151;">
+                <b>SKIPPED</b><span id="res-skipped-count">0</span>
+            </div>
+            <div class="stat-card" id="card-flagged" style="background: #fff3cd; color: #856404; border: 2px solid #fb5607;">
+                <b>FLAGGED</b><span id="res-flag-count">0</span>
+            </div>
+            <div class="stat-card" id="card-review-all" style="grid-column: span 2; background: #e7f3ff; color: #3f37c9; border: 1px solid #3f37c9;">
+                <b>REVIEW ALL QUESTIONS</b><span>&rarr;</span>
+            </div>
+        </div>
+    </div>
+    <div class="nav-footer"><a href="index.html" class="btn btn-primary">Back to Home</a></div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const moduleName = urlParams.get('module') || 'cholinergic';
+
+    const dataScript = document.createElement('script');
+    dataScript.src = `data/${moduleName}.js`;
+    dataScript.onload = () => {
+        document.getElementById('quiz-main-title').innerText = window.quizMetadata.title;
+        document.getElementById('quiz-sub-title').innerText = "Assessment Module Ready";
+        document.getElementById('startBtn').style.display = "inline-block";
+        
+        // We calculate the time here, but the quiz-logic.js script will ultimately determine 
+        // the actual duration when startQuiz() is called. This is just for initial display.
+        if (window.quizData) {
+            const totalQuestions = window.quizData.length;
+            const totalMinutes = Math.floor(totalQuestions * 0.9);
+            document.getElementById('globalTimer').innerText = `${totalMinutes}:00`;
+        }
+
+        const logicScript = document.createElement('script');
+        logicScript.type = "module";
+        logicScript.src = "js/quiz-logic.js";
+        document.body.appendChild(logicScript);
+    };
+    document.body.appendChild(dataScript);
+
+    document.getElementById('startBtn').onclick = () => window.startQuiz();
+    document.getElementById('finalSubmitBtn').onclick = () => window.showFinalResults();
+    document.getElementById('resumeBtn').onclick = () => window.resumeQuiz();
+    
+    document.getElementById('card-correct').onclick = () => window.enterReviewMode('correct');
+    document.getElementById('card-wrong').onclick = () => window.enterReviewMode('wrong');
+    document.getElementById('card-skipped').onclick = () => window.enterReviewMode('skipped');
+    document.getElementById('card-flagged').onclick = () => window.enterReviewMode('flagged');
+    document.getElementById('card-review-all').onclick = () => window.enterReviewMode('all');
+
+    window.triggerSummaryFilter = (type) => {
+        if (typeof window.renderSummary === 'function') window.renderSummary(type);
+    };
+</script>
+</body>
+</html>

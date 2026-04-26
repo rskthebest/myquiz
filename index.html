@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Master Pro - Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/index-style.css">
+    <style>
+        /* Small addition for the unflag icon style */
+        .unflag-icon {
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: transform 0.2s;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+        .unflag-icon:hover {
+            transform: scale(1.2);
+            filter: grayscale(100%); /* Turns red flag grey on hover to signal removal */
+        }
+
+        /* Fixed positions for flag and close button */
+        .modal-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px; /* Adds space between the flag and the X */
+            z-index: 10;
+        }
+
+        /* Adjusting the close button specific style */
+        .close-modal-adjusted {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #748cab;
+            padding: 0;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-bar">
+        <span id="userEmail" style="align-self: center; font-size: 0.8rem; font-weight: 600; color: #748cab; margin-right: 5px;"></span>
+        <button id="authBtn" class="btn-auth" onclick="toggleAuth()">Sign In</button>
+    </div>
+
+    <div class="stats-container">
+        <h2 style="margin: 0 0 15px 0;">Performance</h2>
+        <div style="display:flex; justify-content: space-between; text-align: center;">
+            <div style="flex:1;"><strong>Avg Score</strong><br><span id="avgScore" style="color: var(--primary); font-size: 1.2rem; font-weight: 800;">0%</span></div>
+            <div style="flex:1; border-left: 1px solid #eef2ff;"><strong>Completed</strong><br><span id="compCount" style="color: var(--primary); font-size: 1.2rem; font-weight: 800;">0</span></div>
+        </div>
+
+        <div class="gauge-box">
+            <div class="liquid-container">
+                <div id="liquidFill" class="liquid-fill">0%</div>
+            </div>
+            <div class="recent-label">Recent Attempts</div>
+            <div class="dots-row" id="recentDots">
+                <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-container" id="flaggedSection" style="display:none;">
+        <h3 style="margin: 0 0 15px 0; font-family: 'Merriweather'; color: var(--accent);">🚩 Review Needed</h3>
+        <div id="flaggedList"></div>
+    </div>
+
+    <h3 style="padding: 0 10px; margin-bottom: 15px; font-family: 'Merriweather';">Study Modules</h3>
+    
+    <a href="quiz.html?module=cholinergic" id="card-cholinergic" class="quiz-card" style="opacity: 0.6; pointer-events: none;">
+        <div class="quiz-info">
+            <strong>Cholinergic Pharmacology</strong>
+            <span class="badge" id="badge-cholinergic">Sign in to Unlock</span>
+        </div>
+        <span class="lock-icon" id="lock-cholinergic">🔒</span>
+    </a>
+
+    <a href="quiz.html?module=adrenergic" id="card-adrenergic" class="quiz-card" style="opacity: 0.6; pointer-events: none;">
+        <div class="quiz-info">
+            <strong>Adrenergic Pharmacology</strong>
+            <span class="badge" id="badge-adrenergic">Locked</span>
+        </div>
+        <span class="lock-icon" id="lock-adrenergic">🔒</span>
+    </a>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <div style="padding: 20px; position: relative;">
+                <div id="modalMeta" class="flagged-meta" style="margin: 0; padding-right: 60px;"></div>
+                <h3 id="modalQuestion" style="margin: 15px 0 20px 0; font-size: 1.1rem; line-height: 1.4; color: var(--primary); font-family: 'Merriweather';"></h3>
+                
+                <div class="modal-controls">
+                    <span id="unflagAction" class="unflag-icon" title="Remove from Review">🚩</span>
+                    <button class="close-modal-adjusted" onclick="closeModal()">×</button>
+                </div>
+            </div>
+            
+            <div class="modal-body" style="padding: 0 20px 20px 20px;">
+                <div id="modalOptions"></div>
+                <div id="modalExp" class="exp-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, arrayRemove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCIWNbx_nXGyC2NtjEpyhQIox5Nk57oBEc",
+            authDomain: "newapp2304-4b1ad.firebaseapp.com",
+            projectId: "newapp2304-4b1ad",
+            storageBucket: "newapp2304-4b1ad.firebasestorage.app",
+            messagingSenderId: "965462333439",
+            appId: "1:965462333439:web:40d8c498e4bbff30ff39ca"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+        let globalFlagged = [];
+
+        window.toggleAuth = async () => {
+            try {
+                if (!auth.currentUser) await signInWithPopup(auth, provider);
+                else await signOut(auth);
+            } catch (e) { console.error(e); }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            const modules = ['cholinergic', 'adrenergic'];
+            if (user) {
+                document.getElementById('authBtn').innerText = "Sign Out";
+                document.getElementById('userEmail').innerText = user.email.split('@')[0];
+                document.getElementById('flaggedSection').style.display = "block";
+                modules.forEach(m => {
+                    const card = document.getElementById(`card-${m}`);
+                    card.style.opacity = "1";
+                    card.style.pointerEvents = "auto";
+                    document.getElementById(`lock-${m}`).innerText = "➔";
+                    document.getElementById(`badge-${m}`).innerText = "Unlocked";
+                });
+                onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        globalFlagged = data.flaggedQuestions || [];
+                        updateDashboard(data.scores || []);
+                        renderFlaggedList(globalFlagged);
+                    }
+                });
+            } else {
+                document.getElementById('authBtn').innerText = "Sign In";
+                document.getElementById('userEmail').innerText = "";
+                document.getElementById('flaggedSection').style.display = "none";
+                modules.forEach(m => {
+                    const card = document.getElementById(`card-${m}`);
+                    card.style.opacity = "0.6";
+                    card.style.pointerEvents = "none";
+                    document.getElementById(`lock-${m}`).innerText = "🔒";
+                    document.getElementById(`badge-${m}`).innerText = "Sign in to Unlock";
+                });
+                updateDashboard([]);
+            }
+        });
+
+        function renderFlaggedList(flagged) {
+            const list = document.getElementById('flaggedList');
+            if (flagged.length === 0) {
+                list.innerHTML = "<p style='color:#748cab; font-style:italic; font-size:0.9rem;'>No flagged questions yet.</p>";
+                return;
+            }
+            list.innerHTML = flagged.map((q, i) => `
+                <div class="flagged-item" onclick="openReviewModal(${i})">
+                    <div class="flagged-meta">${q.system || 'Practice'}</div>
+                    <div style="font-weight:700; font-size:0.9rem; line-height:1.4; color: var(--primary);">${q.questionText}</div>
+                </div>
+            `).join('');
+        }
+
+        window.openReviewModal = (index) => {
+            const q = globalFlagged[index];
+            document.getElementById('modalMeta').innerText = (q.system || "Review") + " Module";
+            document.getElementById('modalQuestion').innerText = q.questionText;
+            document.getElementById('modalExp').innerHTML = `<strong>Explanation:</strong><br>${q.explanation}`;
+            document.getElementById('modalExp').style.display = 'none';
+            
+            // Logic for the Unflag Icon
+            const unflagIcon = document.getElementById('unflagAction');
+            unflagIcon.onclick = async (e) => {
+                e.stopPropagation();
+                if(confirm("Remove this question from review?")) {
+                    const userRef = doc(db, "users", auth.currentUser.uid);
+                    await updateDoc(userRef, {
+                        flaggedQuestions: arrayRemove(q)
+                    });
+                    closeModal();
+                }
+            };
+
+            const optionsDiv = document.getElementById('modalOptions');
+            optionsDiv.innerHTML = '';
+            q.options.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'opt-btn';
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+                    if (i === q.correctIndex) btn.classList.add('correct');
+                    else {
+                        btn.classList.add('wrong');
+                        document.querySelectorAll('.opt-btn')[q.correctIndex].classList.add('correct');
+                    }
+                    document.getElementById('modalExp').style.display = 'block';
+                };
+                optionsDiv.appendChild(btn);
+            });
+            document.getElementById('modalOverlay').style.display = 'flex';
+        };
+
+        window.closeModal = () => { document.getElementById('modalOverlay').style.display = 'none'; };
+
+        function updateDashboard(scores) {
+            const numericScores = scores.map(s => typeof s === 'object' ? s.score : s);
+            const avgValue = numericScores.length ? (numericScores.reduce((a, b) => a + b, 0) / numericScores.length) : 0;
+            document.getElementById('avgScore').innerText = Math.round(avgValue) + "%";
+            document.getElementById('compCount').innerText = numericScores.length;
+            const fill = document.getElementById('liquidFill');
+            fill.style.width = avgValue + "%";
+            fill.innerText = avgValue > 20 ? Math.round(avgValue) + "%" : "";
+            const dotsContainer = document.getElementById('recentDots');
+            const lastFive = numericScores.slice(-5);
+            dotsContainer.innerHTML = "";
+            for(let i=0; i<5; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                if (lastFive[i] !== undefined) {
+                    const val = lastFive[i];
+                    if (val >= 90) dot.classList.add('perfect');
+                    else if (val >= 70) dot.classList.add('good');
+                    else if (val >= 40) dot.classList.add('average');
+                    else dot.classList.add('bad');
+                }
+                dotsContainer.appendChild(dot);
+            }
+        }
+    </script>
+</body>
+</html>
